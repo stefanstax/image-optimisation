@@ -13,6 +13,8 @@ interface OutputControlsProps {
   onMaxSizeChange: (size: number) => void;
   language: string;
   onLanguageChange: (language: string) => void;
+  keyword: string;
+  onKeywordChange: (keyword: string) => void;
 }
 
 const LoadingSpinner: React.FC = () => (
@@ -31,6 +33,8 @@ export const OutputControls: React.FC<OutputControlsProps> = ({
   onMaxSizeChange,
   language,
   onLanguageChange,
+  keyword,
+  onKeywordChange,
 }) => {
   const [titleCopied, setTitleCopied] = useState(false);
   const [altTextCopied, setAltTextCopied] = useState(false);
@@ -122,6 +126,21 @@ export const OutputControls: React.FC<OutputControlsProps> = ({
             <option>Russian</option>
             <option>Serbian</option>
             </select>
+        </div>
+
+        <div className="mt-3">
+            <label htmlFor="keyword" className="block text-sm font-medium text-gray-300 mb-2">
+                Optional Keyword
+            </label>
+            <input
+                type="text"
+                id="keyword"
+                value={keyword}
+                onChange={(e) => onKeywordChange(e.target.value)}
+                className="w-full bg-gray-700 border-gray-600 text-white rounded-md p-3 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                placeholder="Guide the AI with a specific topic"
+                disabled={isGeneratingAltText}
+            />
         </div>
 
         <button

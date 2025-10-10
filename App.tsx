@@ -20,6 +20,7 @@ export default function App() {
   const [isProcessingImage, setIsProcessingImage] = useState(false);
   const [maxSizeKB, setMaxSizeKB] = useState<number>(MAX_IMAGE_SIZE_KB);
   const [language, setLanguage] = useState('English');
+  const [keyword, setKeyword] = useState('');
 
   const handleImageUpload = useCallback((file: File) => {
     setOriginalImage(file);
@@ -31,6 +32,7 @@ export default function App() {
     setImageSize({ width: 0, height: 0 });
     setMaxSizeKB(MAX_IMAGE_SIZE_KB);
     setLanguage('English');
+    setKeyword('');
   }, []);
   
   const handleReset = useCallback(() => {
@@ -46,6 +48,7 @@ export default function App() {
     setImageSize({ width: 0, height: 0 });
     setMaxSizeKB(MAX_IMAGE_SIZE_KB);
     setLanguage('English');
+    setKeyword('');
   }, [imageUrl]);
 
   const handleGenerateImageText = useCallback(async () => {
@@ -64,7 +67,7 @@ export default function App() {
         reader.readAsDataURL(originalImage);
       });
 
-      const { title, altText } = await generateImageTextService(base64Image, originalImage.type, language);
+      const { title, altText } = await generateImageTextService(base64Image, originalImage.type, language, keyword);
       setAltText(altText);
       setImageTitle(title);
 
@@ -75,7 +78,7 @@ export default function App() {
     } finally {
       setIsGeneratingAltText(false);
     }
-  }, [imageUrl, originalImage, language]);
+  }, [imageUrl, originalImage, language, keyword]);
 
   const handleDownload = useCallback(async () => {
     if (!imageUrl || imageSize.width === 0) return;
@@ -157,6 +160,8 @@ export default function App() {
                 onMaxSizeChange={setMaxSizeKB}
                 language={language}
                 onLanguageChange={setLanguage}
+                keyword={keyword}
+                onKeywordChange={setKeyword}
               />
             </div>
           </div>

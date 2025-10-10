@@ -5,7 +5,7 @@ import type { ImageText } from '../types';
 // FIX: Per coding guidelines, assume API_KEY is set in the environment and initialize client directly.
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-export async function generateImageText(base64Image: string, mimeType: string, language: string): Promise<ImageText> {
+export async function generateImageText(base64Image: string, mimeType: string, language: string, keyword: string): Promise<ImageText> {
   try {
     const model = 'gemini-2.5-flash';
     const imagePart = {
@@ -15,8 +15,16 @@ export async function generateImageText(base64Image: string, mimeType: string, l
       },
     };
 
+    const basePrompt = `Analyze the image and generate two distinct pieces of text in ${language}: 1. A descriptive alt text for accessibility. 2. A short, simple, and engaging title as a plain sentence. The title should be different from the alt text.`;
+    
+    const keywordInstruction = keyword 
+      ? ` The generated text should be relevant to the following keyword or topic: "${keyword}".`
+      : "";
+
+    const fullPrompt = `${basePrompt}${keywordInstruction}`;
+
     const textPart = {
-      text: `Analyze the image and generate two distinct pieces of text in ${language}: 1. A descriptive alt text for accessibility. 2. A short, simple, and engaging title as a plain sentence. The title should be different from the alt text.`,
+      text: fullPrompt,
     };
 
     const response = await ai.models.generateContent({
