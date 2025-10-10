@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { ImageUploader } from './components/ImageUploader';
 import { ImageEditor } from './components/ImageEditor';
@@ -118,7 +117,7 @@ export default function App() {
       <header className="w-full max-w-6xl mb-6 flex justify-between items-center">
         <div className="flex items-center gap-3">
             <LogoIcon />
-            <h1 className="text-2xl sm:text-3xl font-bold text-white">AI Image Compressor</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-white">Image Optimisation by Maypact</h1>
         </div>
         {imageUrl && (
             <button
@@ -164,7 +163,9 @@ export default function App() {
         )}
       </main>
        <footer className="w-full max-w-6xl mt-6 text-center text-gray-500 text-sm">
-        <p>Powered by Gemini API. Images are processed locally in your browser.</p>
+        <p>
+            Powered by <a href="https://maypact.com/" target="_blank" rel="noopener noreferrer" className="underline hover:text-indigo-400 transition-colors">MAYPACT</a>
+        </p>
       </footer>
     </div>
   );

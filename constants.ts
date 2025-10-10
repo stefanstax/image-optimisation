@@ -23,6 +23,20 @@ export const ASPECT_RATIOS: { [key: string]: AspectRatio } = {
     height: 600, 
     className: 'aspect-w-1 aspect-h-1' 
   },
+  igPortrait: {
+    name: '1080x1350',
+    value: 1080 / 1350,
+    width: 1080,
+    height: 1350,
+    className: 'aspect-w-4 aspect-h-5'
+  },
+  story: {
+    name: '1080x1920',
+    value: 1080 / 1920,
+    width: 1080,
+    height: 1920,
+    className: 'aspect-w-9 aspect-h-16'
+  }
 };
 
 export const MAX_IMAGE_SIZE_KB = 200;

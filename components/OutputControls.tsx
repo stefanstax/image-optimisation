@@ -1,5 +1,5 @@
-import React from 'react';
-import { DownloadIcon, SparklesIcon } from './icons';
+import React, { useState } from 'react';
+import { DownloadIcon, SparklesIcon, CopyIcon, CheckIcon } from './icons';
 
 interface OutputControlsProps {
   imageTitle: string;
@@ -32,6 +32,27 @@ export const OutputControls: React.FC<OutputControlsProps> = ({
   language,
   onLanguageChange,
 }) => {
+  const [titleCopied, setTitleCopied] = useState(false);
+  const [altTextCopied, setAltTextCopied] = useState(false);
+
+  const handleCopyToClipboard = (text: string, type: 'title' | 'alt') => {
+    if (!navigator.clipboard) {
+      console.error('Clipboard API not available');
+      return;
+    }
+    navigator.clipboard.writeText(text).then(() => {
+      if (type === 'title') {
+        setTitleCopied(true);
+        setTimeout(() => setTitleCopied(false), 2000);
+      } else {
+        setAltTextCopied(true);
+        setTimeout(() => setAltTextCopied(false), 2000);
+      }
+    }).catch(err => {
+      console.error('Failed to copy text: ', err);
+    });
+  };
+
   return (
     <div className="flex flex-col h-full bg-gray-900/50 p-6 rounded-xl space-y-6">
       <div>
@@ -44,10 +65,18 @@ export const OutputControls: React.FC<OutputControlsProps> = ({
             id="imageTitle"
             value={imageTitle}
             onChange={(e) => onImageTitleChange(e.target.value)}
-            className="w-full bg-gray-700 border-gray-600 text-white rounded-md p-3 pr-4 focus:ring-indigo-500 focus:border-indigo-500 transition disabled:opacity-70 disabled:cursor-not-allowed"
+            className="w-full bg-gray-700 border-gray-600 text-white rounded-md p-3 pr-10 focus:ring-indigo-500 focus:border-indigo-500 transition disabled:opacity-70 disabled:cursor-not-allowed"
             placeholder="e.g., A busy street in London"
             disabled={isGeneratingAltText}
             />
+            <button
+                onClick={() => handleCopyToClipboard(imageTitle, 'title')}
+                disabled={!imageTitle || isGeneratingAltText}
+                className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                aria-label="Copy title to clipboard"
+            >
+                {titleCopied ? <CheckIcon /> : <CopyIcon />}
+            </button>
         </div>
       </div>
       
@@ -55,9 +84,20 @@ export const OutputControls: React.FC<OutputControlsProps> = ({
         <label className="block text-sm font-medium text-gray-300 mb-2">
           Alt Text
         </label>
-        <div className="flex-grow bg-gray-700 border-gray-600 rounded-md p-3 text-gray-200 text-sm overflow-y-auto min-h-[100px]">
+        <div className="relative flex-grow bg-gray-700 border-gray-600 rounded-md p-3 text-gray-200 text-sm overflow-y-auto min-h-[100px]">
           {isGeneratingAltText && <span className="text-gray-400 italic">Generating...</span>}
-          {!isGeneratingAltText && altText ? altText : !isGeneratingAltText && !altText ? <span className="text-gray-400">Click below to generate a title and alt text.</span> : ''}
+          {!isGeneratingAltText && altText ? (
+            <>
+                <p className="pr-8">{altText}</p>
+                <button
+                    onClick={() => handleCopyToClipboard(altText, 'alt')}
+                    className="absolute top-2 right-2 p-1.5 bg-gray-800/50 rounded-md text-gray-400 hover:text-white hover:bg-gray-600 transition-colors"
+                    aria-label="Copy alt text to clipboard"
+                >
+                    {altTextCopied ? <CheckIcon /> : <CopyIcon />}
+                </button>
+            </>
+          ) : !isGeneratingAltText && !altText ? <span className="text-gray-400">Click below to generate a title and alt text.</span> : null}
         </div>
         
         <div className="mt-4">
