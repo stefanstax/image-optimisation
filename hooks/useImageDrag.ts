@@ -1,96 +1,134 @@
-
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import type { Position } from '../types';
+import type { Position, ImageFit, PaddingSize } from '../types';
+
+const PADDING_MAP: Record<PaddingSize, number> = {
+  none: 0,
+  small: 0.05,
+  medium: 0.1,
+  large: 0.15,
+};
 
 export const useImageDrag = (
   onPositionChange: (position: Position) => void,
   imageSrc: string,
-  aspectRatioValue: number | null
+  aspectRatioValue: number | null,
+  imageFit: ImageFit,
+  paddingSize: PaddingSize
 ) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   const isDraggingRef = useRef(false);
   const dragStartRef = useRef({ x: 0, y: 0 });
+  const positionRef = useRef({ x: 0, y: 0 }); // To prevent stale closures
+
   const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
   const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
   const [naturalSize, setNaturalSize] = useState({ width: 0, height: 0 });
 
-  const updateImageSize = useCallback(() => {
-    if (containerRef.current && imageRef.current && imageRef.current.naturalWidth > 0) {
+  useEffect(() => {
+    positionRef.current = imagePosition;
+  }, [imagePosition]);
+
+  const updateImageGeometry = useCallback(() => {
+    if (containerRef.current && imageRef.current && naturalSize.width > 0) {
       const containerWidth = containerRef.current.clientWidth;
-      const containerHeight = containerRef.current.clientHeight;
-      
-      if (containerHeight === 0) return; // Avoid division by zero if container isn't rendered yet
+      if (containerWidth === 0) return;
 
-      const { naturalWidth, naturalHeight } = imageRef.current;
+      // Calculate container height from width and aspect ratio for reliability
+      const currentAspectRatio = aspectRatioValue ?? (naturalSize.width / naturalSize.height);
+      const containerHeight = containerWidth / currentAspectRatio;
+      if (containerHeight === 0 || !isFinite(containerHeight)) return;
 
-      const containerRatio = containerWidth / containerHeight;
+      const { width: naturalWidth, height: naturalHeight } = naturalSize;
       const imageRatio = naturalWidth / naturalHeight;
 
-      let width, height;
-      if (imageRatio > containerRatio) {
-        // Image is wider than container, scale to cover by matching height
-        height = containerHeight;
-        width = height * imageRatio;
-      } else {
-        // Image is taller or same, scale to cover by matching width
-        width = containerWidth;
-        height = width / imageRatio;
+      let newWidth, newHeight;
+
+      if (imageFit === 'cover') {
+        const containerRatio = currentAspectRatio;
+        if (imageRatio > containerRatio) {
+          newHeight = containerHeight;
+          newWidth = newHeight * imageRatio;
+        } else {
+          newWidth = containerWidth;
+          newHeight = newWidth / imageRatio;
+        }
+        setImageSize({ width: newWidth, height: newHeight });
+
+        const maxX = 0;
+        const minX = containerWidth - newWidth;
+        const maxY = 0;
+        const minY = containerHeight - newHeight;
+        const newX = Math.max(minX, Math.min(positionRef.current.x, maxX));
+        const newY = Math.max(minY, Math.min(positionRef.current.y, maxY));
+        setImagePosition({ x: newX, y: newY });
+      } else { // 'contain'
+        const padding = PADDING_MAP[paddingSize];
+        const paddingX = containerWidth * padding;
+        const paddingY = containerHeight * padding;
+        
+        const paddedWidth = containerWidth - 2 * paddingX;
+        const paddedHeight = containerHeight - 2 * paddingY;
+        const paddedRatio = paddedWidth / paddedHeight;
+
+        if (imageRatio > paddedRatio) {
+          newWidth = paddedWidth;
+          newHeight = newWidth / imageRatio;
+        } else {
+          newHeight = paddedHeight;
+          newWidth = newHeight * imageRatio;
+        }
+        setImageSize({ width: newWidth, height: newHeight });
+
+        const newX = paddingX + (paddedWidth - newWidth) / 2;
+        const newY = paddingY + (paddedHeight - newHeight) / 2;
+        setImagePosition({ x: newX, y: newY });
       }
-      setImageSize({ width, height });
     }
-  }, []);
-  
-  // Reset position and size when image src changes
+  }, [aspectRatioValue, imageFit, naturalSize, paddingSize]);
+
   useEffect(() => {
     const img = imageRef.current;
     if (!img) return;
-
     const handleLoad = () => {
         setNaturalSize({ width: img.naturalWidth, height: img.naturalHeight });
-        setImagePosition({ x: 0, y: 0 });
-        updateImageSize();
+        setImagePosition({ x: 0, y: 0 }); // Reset on new image
     };
-
     img.addEventListener('load', handleLoad);
-    // If the image is already cached/loaded, the load event might not fire
-    if (img.complete && img.naturalWidth > 0) {
-        handleLoad();
+    if (img.complete && img.naturalWidth > 0) handleLoad();
+    return () => img.removeEventListener('load', handleLoad);
+  }, [imageSrc]);
+  
+  // This effect runs once the image's natural dimensions are known.
+  // It's more reliable than a timeout for calculating initial geometry.
+  useEffect(() => {
+    if (naturalSize.width > 0) {
+      updateImageGeometry();
     }
-
-    return () => {
-        img.removeEventListener('load', handleLoad);
-    };
-  }, [imageSrc, updateImageSize]);
-
+  }, [naturalSize, updateImageGeometry]);
 
   useEffect(() => {
-    window.addEventListener('resize', updateImageSize);
-    return () => {
-        window.removeEventListener('resize', updateImageSize);
-    };
-  }, [updateImageSize]);
+    // Using a ResizeObserver is more reliable than the window resize event
+    // for handling container size changes (e.g., due to aspect ratio change or window resize).
+    const container = containerRef.current;
+    if (!container) return;
+    const observer = new ResizeObserver(() => updateImageGeometry());
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [updateImageGeometry]);
 
-  // This effect runs when the aspect ratio of the container changes.
-  useEffect(() => {
-    // A small delay ensures the container has resized in the DOM before we measure it.
-    const handle = setTimeout(() => {
-      updateImageSize();
-    }, 50);
-    return () => clearTimeout(handle);
-  }, [aspectRatioValue, naturalSize, updateImageSize]);
-
-  const onMouseDown = (e: React.MouseEvent) => {
+  const onMouseDown = useCallback((e: MouseEvent) => {
+    if (imageFit !== 'cover') return;
     e.preventDefault();
     isDraggingRef.current = true;
     dragStartRef.current = {
-      x: e.clientX - imagePosition.x,
-      y: e.clientY - imagePosition.y,
+      x: e.clientX - positionRef.current.x,
+      y: e.clientY - positionRef.current.y,
     };
-  };
+  }, [imageFit]);
 
   const onMouseMove = useCallback((e: MouseEvent) => {
-    if (!isDraggingRef.current || !containerRef.current) return;
+    if (!isDraggingRef.current || !containerRef.current || !imageRef.current) return;
     
     const containerRect = containerRef.current.getBoundingClientRect();
     
@@ -110,28 +148,31 @@ export const useImageDrag = (
   }, [imageSize.width, imageSize.height]);
 
   const onMouseUp = useCallback(() => {
-    isDraggingRef.current = false;
-    onPositionChange(imagePosition);
-  }, [onPositionChange, imagePosition]);
+    if (isDraggingRef.current) {
+        isDraggingRef.current = false;
+        onPositionChange(positionRef.current);
+    }
+  }, [onPositionChange]);
   
   useEffect(() => {
-      const currentImageRef = imageRef.current;
-      if (currentImageRef) {
-          currentImageRef.addEventListener('mousedown', onMouseDown as any);
+    const currentImageEl = imageRef.current;
+      if (currentImageEl) {
+          currentImageEl.addEventListener('mousedown', onMouseDown);
       }
       
-      window.addEventListener('mousemove', onMouseMove);
-      window.addEventListener('mouseup', onMouseUp);
+      if (imageFit === 'cover') {
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+      }
       
       return () => {
-          if (currentImageRef) {
-              currentImageRef.removeEventListener('mousedown', onMouseDown as any);
+          if (currentImageEl) {
+              currentImageEl.removeEventListener('mousedown', onMouseDown);
           }
           window.removeEventListener('mousemove', onMouseMove);
           window.removeEventListener('mouseup', onMouseUp);
       };
-  }, [onMouseDown, onMouseMove, onMouseUp]);
-
+  }, [imageFit, onMouseDown, onMouseMove, onMouseUp]);
 
   return { containerRef, imageRef, imagePosition, imageSize, naturalSize };
 };

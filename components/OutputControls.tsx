@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { DownloadIcon, SparklesIcon, CopyIcon, CheckIcon } from './icons';
+import type { ImageFit, PaddingSize } from '../types';
 
 interface OutputControlsProps {
   imageTitle: string;
@@ -7,6 +8,7 @@ interface OutputControlsProps {
   altText: string;
   onGenerateImageText: () => void;
   onDownload: () => void;
+  onDownloadAll: () => void;
   isGeneratingAltText: boolean;
   isProcessingImage: boolean;
   maxSizeKB: number;
@@ -15,7 +17,19 @@ interface OutputControlsProps {
   onLanguageChange: (language: string) => void;
   keyword: string;
   onKeywordChange: (keyword: string) => void;
+  imageFit: ImageFit;
+  paddingSize: PaddingSize;
+  onPaddingSizeChange: (size: PaddingSize) => void;
+  backgroundColor: string;
+  onBackgroundColorChange: (color: string) => void;
 }
+
+const PADDING_OPTIONS: { key: PaddingSize, label: string }[] = [
+    { key: 'none', label: 'None' },
+    { key: 'small', label: 'S' },
+    { key: 'medium', label: 'M' },
+    { key: 'large', label: 'L' },
+];
 
 const LoadingSpinner: React.FC = () => (
     <div className="w-5 h-5 border-2 border-t-transparent border-gray-300 rounded-full animate-spin"></div>
@@ -27,6 +41,7 @@ export const OutputControls: React.FC<OutputControlsProps> = ({
   altText,
   onGenerateImageText,
   onDownload,
+  onDownloadAll,
   isGeneratingAltText,
   isProcessingImage,
   maxSizeKB,
@@ -35,6 +50,11 @@ export const OutputControls: React.FC<OutputControlsProps> = ({
   onLanguageChange,
   keyword,
   onKeywordChange,
+  imageFit,
+  paddingSize,
+  onPaddingSizeChange,
+  backgroundColor,
+  onBackgroundColorChange,
 }) => {
   const [titleCopied, setTitleCopied] = useState(false);
   const [altTextCopied, setAltTextCopied] = useState(false);
@@ -58,7 +78,7 @@ export const OutputControls: React.FC<OutputControlsProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full bg-gray-900/50 p-6 rounded-xl space-y-6">
+    <div className="flex flex-col h-full bg-gray-900/50 p-6 rounded-xl space-y-6 overflow-y-auto">
       <div>
         <label htmlFor="imageTitle" className="block text-sm font-medium text-gray-300 mb-2">
           Image Title
@@ -152,6 +172,47 @@ export const OutputControls: React.FC<OutputControlsProps> = ({
           <span>{isGeneratingAltText ? 'Generating...' : 'Generate Title & Alt Text'}</span>
         </button>
       </div>
+      
+      {imageFit === 'contain' && (
+          <div className="pt-4 border-t border-gray-700 space-y-4">
+              <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Padding
+                  </label>
+                  <div className="flex justify-between gap-2">
+                      {PADDING_OPTIONS.map(({ key, label }) => (
+                          <button
+                              key={key}
+                              onClick={() => onPaddingSizeChange(key)}
+                              className={`w-full py-2 text-sm font-semibold rounded-md transition-colors duration-200 ${
+                                  paddingSize === key
+                                      ? 'bg-indigo-600 text-white'
+                                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                              }`}
+                          >
+                              {label}
+                          </button>
+                      ))}
+                  </div>
+              </div>
+              <div className="flex items-center justify-between">
+                  <label htmlFor="bgColor" className="text-sm font-medium text-gray-300">
+                      Background Color
+                  </label>
+                  <div className="relative w-10 h-10 rounded-md overflow-hidden border-2 border-gray-600">
+                      <input
+                          type="color"
+                          id="bgColor"
+                          value={backgroundColor}
+                          onChange={(e) => onBackgroundColorChange(e.target.value)}
+                          className="absolute inset-[-4px] w-[calc(100%+8px)] h-[calc(100%+8px)] cursor-pointer"
+                          aria-label="Choose background color"
+                          style={{ border: 'none', padding: 0, background: 'transparent' }}
+                      />
+                  </div>
+              </div>
+          </div>
+      )}
 
       <div className="pt-4 border-t border-gray-700 space-y-4">
         <div>
@@ -171,15 +232,26 @@ export const OutputControls: React.FC<OutputControlsProps> = ({
             <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400">KB</span>
           </div>
         </div>
+        
+        <div className="space-y-2">
+            <button
+              onClick={onDownload}
+              disabled={isProcessingImage}
+              className="w-full flex items-center justify-center gap-3 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition-colors duration-200 disabled:bg-indigo-800 disabled:cursor-wait"
+            >
+              {isProcessingImage ? <LoadingSpinner /> : <DownloadIcon />}
+              <span>{isProcessingImage ? 'Processing...' : 'Download Selected'}</span>
+            </button>
 
-        <button
-          onClick={onDownload}
-          disabled={isProcessingImage}
-          className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-lg rounded-lg transition-colors duration-200 disabled:bg-indigo-800 disabled:cursor-wait"
-        >
-          {isProcessingImage ? <LoadingSpinner /> : <DownloadIcon />}
-          <span>{isProcessingImage ? 'Processing...' : 'Download Image'}</span>
-        </button>
+            <button
+                onClick={onDownloadAll}
+                disabled={isProcessingImage}
+                className="w-full flex items-center justify-center gap-3 px-6 py-3 bg-gray-600 hover:bg-gray-500 text-white font-semibold rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+                <DownloadIcon />
+                <span>Download All</span>
+            </button>
+        </div>
         <p className="text-center text-xs text-gray-500 !mt-2">Output is compressed and converted to WebP format.</p>
       </div>
     </div>

@@ -1,175 +1,324 @@
-import React, { useState, useCallback } from 'react';
-import { ImageUploader } from './components/ImageUploader';
-import { ImageEditor } from './components/ImageEditor';
-import { OutputControls } from './components/OutputControls';
-import { generateImageText as generateImageTextService } from './services/geminiService';
-import { processImage } from './services/imageService';
-import type { AspectRatio, Position, Size } from './types';
-import { ASPECT_RATIOS, MAX_IMAGE_SIZE_KB } from './constants';
-import { LogoIcon, ResetIcon } from './components/icons';
+import React, { useState, useCallback, useMemo } from "react";
+import { ImageUploader } from "./components/ImageUploader";
+import { ImageEditor } from "./components/ImageEditor";
+import { OutputControls } from "./components/OutputControls";
+import { ImageList } from "./components/ImageList";
+import { generateImageText as generateImageTextService } from "./services/geminiService";
+import { processImage } from "./services/imageService";
+import type {
+  ImageState,
+  AspectRatio,
+  Position,
+  Size,
+  ImageFit,
+  PaddingSize,
+} from "./types";
+import { ASPECT_RATIOS, MAX_IMAGE_SIZE_KB } from "./constants";
+import { LogoIcon, ResetIcon } from "./components/icons";
 
 export default function App() {
-  const [originalImage, setOriginalImage] = useState<File | null>(null);
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [aspectRatio, setAspectRatio] = useState<AspectRatio>(ASPECT_RATIOS.original);
-  const [imagePosition, setImagePosition] = useState<Position>({ x: 0, y: 0 });
-  const [imageSize, setImageSize] = useState<Size>({ width: 0, height: 0 });
-  const [imageTitle, setImageTitle] = useState('');
-  const [altText, setAltText] = useState('');
-  const [isGeneratingAltText, setIsGeneratingAltText] = useState(false);
-  const [isProcessingImage, setIsProcessingImage] = useState(false);
-  const [maxSizeKB, setMaxSizeKB] = useState<number>(MAX_IMAGE_SIZE_KB);
-  const [language, setLanguage] = useState('English');
-  const [keyword, setKeyword] = useState('');
+  const [images, setImages] = useState<ImageState[]>([]);
+  const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
 
-  const handleImageUpload = useCallback((file: File) => {
-    setOriginalImage(file);
-    setImageUrl(URL.createObjectURL(file));
-    setImageTitle(file.name.split('.').slice(0, -1).join('.'));
-    setAltText('');
-    setAspectRatio(ASPECT_RATIOS.original);
-    setImagePosition({ x: 0, y: 0 });
-    setImageSize({ width: 0, height: 0 });
-    setMaxSizeKB(MAX_IMAGE_SIZE_KB);
-    setLanguage('English');
-    setKeyword('');
-  }, []);
-  
+  const updateImage = useCallback(
+    (id: string, newProps: Partial<ImageState>) => {
+      setImages((currentImages) =>
+        currentImages.map((img) =>
+          img.id === id ? { ...img, ...newProps } : img
+        )
+      );
+    },
+    []
+  );
+
+  const updateSelectedImage = useCallback(
+    (newProps: Partial<Omit<ImageState, "id" | "file" | "url">>) => {
+      if (selectedImageId) {
+        updateImage(selectedImageId, newProps);
+      }
+    },
+    [selectedImageId, updateImage]
+  );
+
+  // Memoize all event handlers to prevent re-renders in child components
+  const handleAspectRatioChange = useCallback(
+    (aspectRatio: AspectRatio) => updateSelectedImage({ aspectRatio }),
+    [updateSelectedImage]
+  );
+  const handlePositionChange = useCallback(
+    (position: Position) => updateSelectedImage({ position }),
+    [updateSelectedImage]
+  );
+  const handleSizeChange = useCallback(
+    (size: Size) => updateSelectedImage({ size }),
+    [updateSelectedImage]
+  );
+  const handleImageFitChange = useCallback(
+    (imageFit: ImageFit) => updateSelectedImage({ imageFit }),
+    [updateSelectedImage]
+  );
+  const handleImageTitleChange = useCallback(
+    (title: string) => updateSelectedImage({ title }),
+    [updateSelectedImage]
+  );
+  const handleMaxSizeChange = useCallback(
+    (maxSizeKB: number) => updateSelectedImage({ maxSizeKB }),
+    [updateSelectedImage]
+  );
+  const handleLanguageChange = useCallback(
+    (language: string) => updateSelectedImage({ language }),
+    [updateSelectedImage]
+  );
+  const handleKeywordChange = useCallback(
+    (keyword: string) => updateSelectedImage({ keyword }),
+    [updateSelectedImage]
+  );
+  const handlePaddingSizeChange = useCallback(
+    (paddingSize: PaddingSize) => updateSelectedImage({ paddingSize }),
+    [updateSelectedImage]
+  );
+  const handleBackgroundColorChange = useCallback(
+    (backgroundColor: string) => updateSelectedImage({ backgroundColor }),
+    [updateSelectedImage]
+  );
+
+  const handleImageUpload = useCallback(
+    (files: File[]) => {
+      const newImages: ImageState[] = files.map((file, index) => {
+        const id = `${Date.now()}-${index}`;
+        return {
+          id,
+          file,
+          url: URL.createObjectURL(file),
+          title: file.name.split(".").slice(0, -1).join("."),
+          altText: "",
+          aspectRatio: ASPECT_RATIOS.original,
+          position: { x: 0, y: 0 },
+          size: { width: 0, height: 0 },
+          maxSizeKB: MAX_IMAGE_SIZE_KB,
+          language: "English",
+          keyword: "",
+          imageFit: "cover",
+          paddingSize: "none",
+          backgroundColor: "#000000",
+          isGeneratingText: false,
+          isProcessing: false,
+        };
+      });
+
+      setImages((prevImages) => [...prevImages, ...newImages]);
+      if (!selectedImageId && newImages.length > 0) {
+        setSelectedImageId(newImages[0].id);
+      }
+    },
+    [selectedImageId]
+  );
+
   const handleReset = useCallback(() => {
-    if (imageUrl) {
-      URL.revokeObjectURL(imageUrl);
-    }
-    setOriginalImage(null);
-    setImageUrl(null);
-    setImageTitle('');
-    setAltText('');
-    setAspectRatio(ASPECT_RATIOS.original);
-    setImagePosition({ x: 0, y: 0 });
-    setImageSize({ width: 0, height: 0 });
-    setMaxSizeKB(MAX_IMAGE_SIZE_KB);
-    setLanguage('English');
-    setKeyword('');
-  }, [imageUrl]);
+    images.forEach((image) => URL.revokeObjectURL(image.url));
+    setImages([]);
+    setSelectedImageId(null);
+  }, [images]);
+
+  const selectedImage = useMemo(() => {
+    if (!selectedImageId) return null;
+    return images.find((img) => img.id === selectedImageId) ?? null;
+  }, [images, selectedImageId]);
 
   const handleGenerateImageText = useCallback(async () => {
-    if (!imageUrl || !originalImage) return;
-    
-    const originalBaseName = originalImage.name.split('.').slice(0, -1).join('.');
-    setIsGeneratingAltText(true);
-    setImageTitle('Generating...');
-    setAltText('');
+    if (!selectedImage) return;
+
+    updateImage(selectedImage.id, {
+      isGeneratingText: true,
+      title: "Generating...",
+    });
 
     try {
       const base64Image = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
-        reader.onload = () => resolve((reader.result as string).split(',')[1]);
-        reader.onerror = error => reject(error);
-        reader.readAsDataURL(originalImage);
+        reader.onload = () => resolve((reader.result as string).split(",")[1]);
+        reader.onerror = (error) => reject(error);
+        reader.readAsDataURL(selectedImage.file);
       });
 
-      const { title, altText } = await generateImageTextService(base64Image, originalImage.type, language, keyword);
-      setAltText(altText);
-      setImageTitle(title);
-
+      const { title, altText } = await generateImageTextService(
+        base64Image,
+        selectedImage.file.type,
+        selectedImage.language,
+        selectedImage.keyword
+      );
+      updateImage(selectedImage.id, { altText, title });
     } catch (error) {
-      console.error('Error generating image text:', error);
-      setAltText('Sorry, could not generate alt text.');
-      setImageTitle(originalBaseName); // Restore original name on error
+      console.error("Error generating image text:", error);
+      const originalBaseName = selectedImage.file.name
+        .split(".")
+        .slice(0, -1)
+        .join(".");
+      updateImage(selectedImage.id, {
+        altText: "Sorry, could not generate alt text.",
+        title: originalBaseName,
+      });
     } finally {
-      setIsGeneratingAltText(false);
+      updateImage(selectedImage.id, { isGeneratingText: false });
     }
-  }, [imageUrl, originalImage, language, keyword]);
+  }, [selectedImage, updateImage]);
 
-  const handleDownload = useCallback(async () => {
-    if (!imageUrl || imageSize.width === 0) return;
-    setIsProcessingImage(true);
-    try {
-      const img = new Image();
-      img.src = imageUrl;
-      img.onload = async () => {
-        const blob = await processImage(img, aspectRatio, imagePosition, maxSizeKB, imageSize);
-        
-        const sanitizedTitle = imageTitle
+  const downloadImage = useCallback(
+    async (image: ImageState) => {
+      if (image.size.width === 0) {
+        console.error(`Image ${image.title} has not rendered, cannot process.`);
+        return;
+      }
+
+      updateImage(image.id, { isProcessing: true });
+      try {
+        const img = new Image();
+        img.src = image.url;
+        await img.decode(); // Ensure image is loaded
+
+        const blob = await processImage(
+          img,
+          image.aspectRatio,
+          image.position,
+          image.maxSizeKB,
+          image.size,
+          image.imageFit,
+          image.paddingSize,
+          image.backgroundColor
+        );
+
+        const sanitizedTitle =
+          image.title
             .toLowerCase()
-            .replace(/[^a-z0-9\s-]/g, '') // allow letters, numbers, spaces, hyphens
+            .replace(/[^a-z0-9\s-]/g, "")
             .trim()
-            .replace(/\s+/g, '-') // replace spaces with hyphens
-            .slice(0, 50) || 'compressed-image';
+            .replace(/\s+/g, "-")
+            .slice(0, 50) || "compressed-image";
 
-        const link = document.createElement('a');
+        const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
         link.download = `${sanitizedTitle}.webp`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(link.href);
-        setIsProcessingImage(false);
-      };
-      img.onerror = () => {
-          console.error("Image failed to load for processing.");
-          setIsProcessingImage(false);
+      } catch (error) {
+        console.error("Error processing image:", error);
+      } finally {
+        updateImage(image.id, { isProcessing: false });
       }
-    } catch (error) {
-      console.error('Error processing image:', error);
-      setIsProcessingImage(false);
+    },
+    [updateImage]
+  );
+
+  const handleDownloadSelected = useCallback(async () => {
+    if (selectedImage) {
+      await downloadImage(selectedImage);
     }
-  }, [imageUrl, aspectRatio, imagePosition, imageTitle, maxSizeKB, imageSize]);
+  }, [selectedImage, downloadImage]);
+
+  const handleDownloadAll = useCallback(async () => {
+    for (const image of images) {
+      await downloadImage(image);
+    }
+  }, [images, downloadImage]);
 
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100 flex flex-col items-center p-4 sm:p-8 font-sans">
-      <header className="w-full max-w-6xl mb-6 flex justify-between items-center">
+      <header className="w-full max-w-7xl mb-6 flex justify-between items-center">
         <div className="flex items-center gap-3">
-            <LogoIcon />
-            <h1 className="text-2xl sm:text-3xl font-bold text-white">Image Optimisation by Maypact</h1>
+          <img
+            src="/assets/images/maypact_shadow.png"
+            className="w-[40px] h-[40px] rounded-[8px]"
+          />
+          <h1 className="text-2xl font-bold text-white">
+            Image Optimisation Tool by Maypact
+          </h1>
         </div>
-        {imageUrl && (
-            <button
-                onClick={handleReset}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors duration-200"
-            >
-                <ResetIcon />
-                <span className="hidden sm:inline">New Image</span>
-            </button>
+        {images.length > 0 && (
+          <button
+            onClick={handleReset}
+            className="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors duration-200"
+          >
+            <ResetIcon />
+            <span className="hidden sm:inline">Clear All</span>
+          </button>
         )}
       </header>
 
-      <main className="w-full max-w-6xl flex-grow bg-gray-800 rounded-2xl shadow-2xl p-4 sm:p-8">
-        {!imageUrl ? (
+      <main className="w-full max-w-7xl flex-grow bg-gray-800 rounded-2xl shadow-2xl p-4 sm:p-8">
+        {images.length === 0 ? (
           <ImageUploader onImageUpload={handleImageUpload} />
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 h-full">
-            <div className="lg:col-span-3 flex flex-col items-center justify-center p-4 bg-gray-900/50 rounded-xl">
-              <ImageEditor
-                imageSrc={imageUrl}
-                aspectRatio={aspectRatio}
-                onAspectRatioChange={setAspectRatio}
-                onPositionChange={setImagePosition}
-                onSizeChange={setImageSize}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 h-full">
+            <div className="lg:col-span-3 xl:col-span-2 flex flex-col h-full">
+              <ImageList
+                images={images}
+                selectedImageId={selectedImageId}
+                onSelectImage={setSelectedImageId}
+                onAddImages={handleImageUpload}
               />
             </div>
-            <div className="lg:col-span-2 flex flex-col space-y-6">
-              <OutputControls
-                imageTitle={imageTitle}
-                onImageTitleChange={setImageTitle}
-                altText={altText}
-                onGenerateImageText={handleGenerateImageText}
-                onDownload={handleDownload}
-                isGeneratingAltText={isGeneratingAltText}
-                isProcessingImage={isProcessingImage}
-                maxSizeKB={maxSizeKB}
-                onMaxSizeChange={setMaxSizeKB}
-                language={language}
-                onLanguageChange={setLanguage}
-                keyword={keyword}
-                onKeywordChange={setKeyword}
-              />
-            </div>
+            {selectedImage && (
+              <>
+                <div className="lg:col-span-5 xl:col-span-6 flex flex-col items-center justify-center p-4 bg-gray-900/50 rounded-xl">
+                  <ImageEditor
+                    key={selectedImage.id} // Add key to force re-mount on image change
+                    imageSrc={selectedImage.url}
+                    aspectRatio={selectedImage.aspectRatio}
+                    onAspectRatioChange={handleAspectRatioChange}
+                    onPositionChange={handlePositionChange}
+                    onSizeChange={handleSizeChange}
+                    imageFit={selectedImage.imageFit}
+                    onImageFitChange={handleImageFitChange}
+                    paddingSize={selectedImage.paddingSize}
+                    backgroundColor={selectedImage.backgroundColor}
+                  />
+                </div>
+                <div className="lg:col-span-4 xl:col-span-4 flex flex-col space-y-6">
+                  <OutputControls
+                    imageTitle={selectedImage.title}
+                    onImageTitleChange={handleImageTitleChange}
+                    altText={selectedImage.altText}
+                    onGenerateImageText={handleGenerateImageText}
+                    onDownload={handleDownloadSelected}
+                    onDownloadAll={handleDownloadAll}
+                    isGeneratingAltText={selectedImage.isGeneratingText}
+                    isProcessingImage={selectedImage.isProcessing}
+                    maxSizeKB={selectedImage.maxSizeKB}
+                    onMaxSizeChange={handleMaxSizeChange}
+                    language={selectedImage.language}
+                    onLanguageChange={handleLanguageChange}
+                    keyword={selectedImage.keyword}
+                    onKeywordChange={handleKeywordChange}
+                    imageFit={selectedImage.imageFit}
+                    paddingSize={selectedImage.paddingSize}
+                    onPaddingSizeChange={handlePaddingSizeChange}
+                    backgroundColor={selectedImage.backgroundColor}
+                    onBackgroundColorChange={handleBackgroundColorChange}
+                  />
+                </div>
+              </>
+            )}
+            {!selectedImage && images.length > 0 && (
+              <div className="lg:col-span-9 flex items-center justify-center text-gray-400">
+                <p>Select an image from the list to begin editing.</p>
+              </div>
+            )}
           </div>
         )}
       </main>
-       <footer className="w-full max-w-6xl mt-6 text-center text-gray-500 text-sm">
+      <footer className="w-full max-w-7xl mt-6 text-center text-gray-500 text-sm">
         <p>
-            Powered by <a href="https://maypact.com/" target="_blank" rel="noopener noreferrer" className="underline hover:text-indigo-400 transition-colors">MAYPACT</a>
+          Built and Maintained by{" "}
+          <a
+            href="https://maypact.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-indigo-400 transition-colors"
+          >
+            MAYPACT
+          </a>
         </p>
       </footer>
     </div>
