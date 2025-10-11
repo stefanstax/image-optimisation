@@ -37,4 +37,5 @@ export interface ImageState {
   imageFit: ImageFit;
   paddingSize: PaddingSize;
   backgroundColor: string;
+  isCentered: boolean;
 }

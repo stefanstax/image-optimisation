@@ -45,8 +45,20 @@ export default function App() {
     (aspectRatio: AspectRatio) => updateSelectedImage({ aspectRatio }),
     [updateSelectedImage]
   );
+  const handleIsCenteredChange = useCallback(
+    (isCentered: boolean) => updateSelectedImage({ isCentered }),
+    [updateSelectedImage]
+  );
+
   const handlePositionChange = useCallback(
-    (position: Position) => updateSelectedImage({ position }),
+    (position: Position, source: "drag" | "center") => {
+      if (source === "drag") {
+        updateSelectedImage({ position, isCentered: false });
+      } else {
+        // source === 'center'
+        updateSelectedImage({ position }); // Just update position, don't change isCentered flag
+      }
+    },
     [updateSelectedImage]
   );
   const handleSizeChange = useCallback(
@@ -101,6 +113,7 @@ export default function App() {
           imageFit: "cover",
           paddingSize: "none",
           backgroundColor: "#000000",
+          isCentered: true,
           isGeneratingText: false,
           isProcessing: false,
         };
@@ -226,13 +239,13 @@ export default function App() {
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100 flex flex-col items-center p-4 sm:p-8 font-sans">
       <header className="w-full max-w-7xl mb-6 flex justify-between items-center">
-        <div className="flex items-center gap-3">
+        <div className="w-full flex items-center justify-center gap-6">
           <img
-            src="/assets/images/maypact_shadow.png"
-            className="w-[40px] h-[40px] rounded-[8px]"
+            src="https://maypact.com/wp-content/uploads/2024/08/maypact-official-blurple-logo-mobile.svg"
+            className="w-[50px] h-[50px] rounded-[8px] bg-white p-2"
           />
           <h1 className="text-2xl font-bold text-white">
-            Image Optimisation Tool by Maypact
+            Image Optimisation Tool
           </h1>
         </div>
         {images.length > 0 && (
@@ -267,12 +280,15 @@ export default function App() {
                     imageSrc={selectedImage.url}
                     aspectRatio={selectedImage.aspectRatio}
                     onAspectRatioChange={handleAspectRatioChange}
+                    position={selectedImage.position}
                     onPositionChange={handlePositionChange}
                     onSizeChange={handleSizeChange}
                     imageFit={selectedImage.imageFit}
                     onImageFitChange={handleImageFitChange}
                     paddingSize={selectedImage.paddingSize}
                     backgroundColor={selectedImage.backgroundColor}
+                    isCentered={selectedImage.isCentered}
+                    onIsCenteredChange={handleIsCenteredChange}
                   />
                 </div>
                 <div className="lg:col-span-4 xl:col-span-4 flex flex-col space-y-6">
@@ -296,6 +312,7 @@ export default function App() {
                     onPaddingSizeChange={handlePaddingSizeChange}
                     backgroundColor={selectedImage.backgroundColor}
                     onBackgroundColorChange={handleBackgroundColorChange}
+                    aspectRatio={selectedImage.aspectRatio}
                   />
                 </div>
               </>
