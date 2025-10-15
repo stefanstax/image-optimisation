@@ -4,6 +4,7 @@ export interface AspectRatio {
   width?: number; // The target output width in pixels
   height?: number; // The target output height in pixels
   className: string;
+  qualityKey: string;
 }
 
 export interface Position {

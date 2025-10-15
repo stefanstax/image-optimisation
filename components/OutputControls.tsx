@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { DownloadIcon, SparklesIcon, CopyIcon, CheckIcon } from "./icons";
 import type { ImageFit, PaddingSize, AspectRatio } from "../types";
 
@@ -34,15 +34,20 @@ const PADDING_OPTIONS: { key: PaddingSize; label: string }[] = [
 
 const QUALITY_OPTIONS: { [key: string]: { label: string; sizeKB: number }[] } =
   {
-    large: [
-      { label: "Great Quality", sizeKB: 200 },
-      { label: "Good Quality", sizeKB: 100 },
+    banner: [
+      { label: "Higher quality", sizeKB: 200 },
+      { label: "Optimised quality", sizeKB: 100 },
     ],
-    featured: [{ label: "Optimized Quality", sizeKB: 75 }],
-    square: [
-      { label: "Great Quality", sizeKB: 100 },
-      { label: "Good Quality", sizeKB: 50 },
+    featured: [{ label: "Optimised quality", sizeKB: 75 }],
+    postRegular: [
+      { label: "Higher quality", sizeKB: 75 },
+      { label: "Optimised quality", sizeKB: 50 },
     ],
+    postBig: [
+      { label: "Higher quality", sizeKB: 90 },
+      { label: "Optimised quality", sizeKB: 60 },
+    ],
+    default: [{ label: "Optimised quality", sizeKB: 200 }],
   };
 
 const LoadingSpinner: React.FC = () => (
@@ -95,20 +100,17 @@ export const OutputControls: React.FC<OutputControlsProps> = ({
       });
   };
 
-  const getQualityOptions = () => {
-    if (aspectRatio.name === "Banner") {
-      return QUALITY_OPTIONS.large;
-    }
-    if (aspectRatio.name === "Featured Image") {
-      return QUALITY_OPTIONS.featured;
-    }
-    if (["Blog Post Big", "Blog Post Regular"].includes(aspectRatio.name)) {
-      return QUALITY_OPTIONS.square;
-    }
-    return null; // Fallback for 'Original' and any other aspect ratios
-  };
+  const qualityOptions =
+    QUALITY_OPTIONS[aspectRatio.qualityKey] ?? QUALITY_OPTIONS.default;
 
-  const qualityOptions = getQualityOptions();
+  // This effect ensures that if the current maxSizeKB is not one of the available
+  // options (e.g., after an aspect ratio change), it defaults to the first option.
+  useEffect(() => {
+    const availableSizes = qualityOptions.map((opt) => opt.sizeKB);
+    if (!availableSizes.includes(maxSizeKB)) {
+      onMaxSizeChange(availableSizes[0]);
+    }
+  }, [qualityOptions, maxSizeKB, onMaxSizeChange]);
 
   return (
     <div className="flex flex-col h-full bg-gray-900/50 p-6 rounded-lg space-y-6 overflow-y-auto">
@@ -266,47 +268,26 @@ export const OutputControls: React.FC<OutputControlsProps> = ({
       )}
 
       <div className="pt-4 border-t border-gray-700 space-y-4">
-        {aspectRatio.name !== "Original" && (
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              {qualityOptions ? "Output Quality" : "Max File Size"}
-            </label>
-            {qualityOptions ? (
-              <div className="flex justify-around gap-2">
-                {qualityOptions.map(({ label, sizeKB }) => (
-                  <button
-                    key={label}
-                    onClick={() => onMaxSizeChange(sizeKB)}
-                    className={`w-full py-2 px-2 text-sm font-semibold rounded-md transition-colors duration-200 ${
-                      maxSizeKB === sizeKB
-                        ? "bg-indigo-600 text-white"
-                        : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-                    }`}
-                  >
-                    {label} ({sizeKB}KB)
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <div className="relative">
-                <input
-                  type="number"
-                  id="maxSize"
-                  value={maxSizeKB}
-                  onChange={(e) =>
-                    onMaxSizeChange(parseInt(e.target.value, 10) || 0)
-                  }
-                  className="w-full bg-gray-700 border-gray-600 text-white rounded-md p-3 pr-12 focus:ring-indigo-500 focus:border-indigo-500 transition"
-                  placeholder="e.g., 200"
-                  min="1"
-                />
-                <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400">
-                  KB
-                </span>
-              </div>
-            )}
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-2">
+            Output Quality
+          </label>
+          <div className="flex justify-around gap-2">
+            {qualityOptions.map(({ label, sizeKB }) => (
+              <button
+                key={label}
+                onClick={() => onMaxSizeChange(sizeKB)}
+                className={`w-full py-2 px-2 text-sm font-semibold rounded-md transition-colors duration-200 ${
+                  maxSizeKB === sizeKB
+                    ? "bg-indigo-600 text-white"
+                    : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                }`}
+              >
+                {label} ({sizeKB}KB)
+              </button>
+            ))}
           </div>
-        )}
+        </div>
 
         <div className="space-y-2">
           <button
