@@ -3,40 +3,49 @@ import type { AspectRatio } from "./types";
 export const ASPECT_RATIOS: { [key: string]: AspectRatio } = {
   original: { name: "Original", value: null, className: "" },
   fullhd: {
-    name: "1920x1080",
+    name: "Banner (1920x1080)",
     value: 1920 / 1080,
     width: 1920,
     height: 1080,
     className: "aspect-w-16 aspect-h-9",
   },
   custom: {
-    name: "1200x657",
+    name: "Featured Image (1200x657)",
     value: 1200 / 657,
     width: 1200,
     height: 657,
     className: "",
   },
   square: {
-    name: "600x600",
+    name: "Square Regular (600x600)",
     value: 1,
     width: 600,
     height: 600,
     className: "aspect-w-1 aspect-h-1",
   },
+  squareHD: {
+    name: "Square Big  (1080x1080)",
+    value: 1,
+    width: 1080,
+    height: 1080,
+    className: "aspect-w-1 aspect-h-1",
+  },
+  /*
   igPortrait: {
-    name: "1080x1350",
+    name: '1080x1350',
     value: 1080 / 1350,
     width: 1080,
     height: 1350,
-    className: "aspect-w-4 aspect-h-5",
+    className: 'aspect-w-4 aspect-h-5'
   },
   story: {
-    name: "1080x1920",
+    name: '1080x1920',
     value: 1080 / 1920,
     width: 1080,
     height: 1920,
-    className: "aspect-w-9 aspect-h-16",
-  },
+    className: 'aspect-w-9 aspect-h-16'
+  }
+  */
 };
 
 export const MAX_IMAGE_SIZE_KB = 200;

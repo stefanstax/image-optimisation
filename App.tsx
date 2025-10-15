@@ -14,7 +14,7 @@ import type {
   PaddingSize,
 } from "./types";
 import { ASPECT_RATIOS, MAX_IMAGE_SIZE_KB } from "./constants";
-import { LogoIcon, ResetIcon } from "./components/icons";
+import { ResetIcon } from "./components/icons";
 
 export default function App() {
   const [images, setImages] = useState<ImageState[]>([]);
@@ -43,22 +43,6 @@ export default function App() {
   // Memoize all event handlers to prevent re-renders in child components
   const handleAspectRatioChange = useCallback(
     (aspectRatio: AspectRatio) => updateSelectedImage({ aspectRatio }),
-    [updateSelectedImage]
-  );
-  const handleIsCenteredChange = useCallback(
-    (isCentered: boolean) => updateSelectedImage({ isCentered }),
-    [updateSelectedImage]
-  );
-
-  const handlePositionChange = useCallback(
-    (position: Position, source: "drag" | "center") => {
-      if (source === "drag") {
-        updateSelectedImage({ position, isCentered: false });
-      } else {
-        // source === 'center'
-        updateSelectedImage({ position }); // Just update position, don't change isCentered flag
-      }
-    },
     [updateSelectedImage]
   );
   const handleSizeChange = useCallback(
@@ -93,6 +77,22 @@ export default function App() {
     (backgroundColor: string) => updateSelectedImage({ backgroundColor }),
     [updateSelectedImage]
   );
+  const handleIsCenteredChange = useCallback(
+    (isCentered: boolean) => updateSelectedImage({ isCentered }),
+    [updateSelectedImage]
+  );
+
+  const handlePositionChange = useCallback(
+    (position: Position, source: "drag" | "center") => {
+      if (source === "drag") {
+        updateSelectedImage({ position, isCentered: false });
+      } else {
+        // source === 'center'
+        updateSelectedImage({ position }); // Just update position, don't change isCentered flag
+      }
+    },
+    [updateSelectedImage]
+  );
 
   const handleImageUpload = useCallback(
     (files: File[]) => {
@@ -113,7 +113,7 @@ export default function App() {
           imageFit: "cover",
           paddingSize: "none",
           backgroundColor: "#000000",
-          isCentered: true,
+          isCentered: true, // Center by default
           isGeneratingText: false,
           isProcessing: false,
         };
@@ -238,16 +238,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100 flex flex-col items-center p-4 sm:p-8 font-sans">
-      <header className="w-full max-w-7xl mb-6 flex justify-between items-center">
-        <div className="w-full flex items-center justify-center gap-6">
-          <img
-            src="https://maypact.com/wp-content/uploads/2024/08/maypact-official-blurple-logo-mobile.svg"
-            className="w-[50px] h-[50px] rounded-[8px] bg-white p-2"
-          />
-          <h1 className="text-2xl font-bold text-white">
-            Image Optimisation Tool
-          </h1>
-        </div>
+      <header className="w-full max-w-screen-2xl mb-6 flex justify-end items-center min-h-[40px]">
         {images.length > 0 && (
           <button
             onClick={handleReset}
@@ -259,7 +250,7 @@ export default function App() {
         )}
       </header>
 
-      <main className="w-full max-w-7xl flex-grow bg-gray-800 rounded-2xl shadow-2xl p-4 sm:p-8">
+      <main className="w-full max-w-screen-2xl flex-grow bg-gray-800 rounded-lg shadow-2xl p-4 sm:p-8">
         {images.length === 0 ? (
           <ImageUploader onImageUpload={handleImageUpload} />
         ) : (
@@ -274,7 +265,7 @@ export default function App() {
             </div>
             {selectedImage && (
               <>
-                <div className="lg:col-span-5 xl:col-span-6 flex flex-col items-center justify-center p-4 bg-gray-900/50 rounded-xl">
+                <div className="lg:col-span-5 xl:col-span-6 flex flex-col items-center justify-center p-4 bg-gray-900/50 rounded-lg">
                   <ImageEditor
                     key={selectedImage.id} // Add key to force re-mount on image change
                     imageSrc={selectedImage.url}
@@ -325,9 +316,9 @@ export default function App() {
           </div>
         )}
       </main>
-      <footer className="w-full max-w-7xl mt-6 text-center text-gray-500 text-sm">
+      <footer className="w-full max-w-screen-2xl mt-6 text-center text-gray-500 text-sm">
         <p>
-          Built and Maintained by{" "}
+          Powered by{" "}
           <a
             href="https://maypact.com/"
             target="_blank"

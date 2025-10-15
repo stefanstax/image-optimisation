@@ -101,12 +101,12 @@ export const ImageEditor: React.FC<ImageEditorProps> = ({
           draggable="false"
         />
       </div>
-      <div className="flex flex-wrap justify-center gap-2 p-2 bg-gray-800 rounded-full">
+      <div className="flex flex-wrap justify-center gap-2 p-2 bg-gray-800 rounded-lg">
         {Object.values(ASPECT_RATIOS).map((ratio) => (
           <button
             key={ratio.name}
             onClick={() => onAspectRatioChange(ratio)}
-            className={`px-4 py-2 text-sm font-semibold rounded-full transition-colors duration-200 ${
+            className={`px-4 py-2 text-sm font-semibold rounded-lg transition-colors duration-200 ${
               aspectRatio.name === ratio.name
                 ? "bg-indigo-600 text-white"
                 : "bg-gray-700 text-gray-300 hover:bg-gray-600"
@@ -134,7 +134,7 @@ export const ImageEditor: React.FC<ImageEditorProps> = ({
         <div className="flex items-center space-x-2 border-l border-gray-700 ml-2 pl-2">
           <button
             onClick={() => handleFitChange("cover")}
-            className={`px-4 py-2 text-sm font-semibold rounded-full transition-colors duration-200 ${
+            className={`px-4 py-2 text-sm font-semibold rounded-lg transition-colors duration-200 ${
               imageFit === "cover"
                 ? "bg-indigo-600 text-white"
                 : "bg-gray-700 text-gray-300 hover:bg-gray-600"
@@ -144,7 +144,7 @@ export const ImageEditor: React.FC<ImageEditorProps> = ({
           </button>
           <button
             onClick={() => handleFitChange("contain")}
-            className={`px-4 py-2 text-sm font-semibold rounded-full transition-colors duration-200 ${
+            className={`px-4 py-2 text-sm font-semibold rounded-lg transition-colors duration-200 ${
               imageFit === "contain"
                 ? "bg-indigo-600 text-white"
                 : "bg-gray-700 text-gray-300 hover:bg-gray-600"

@@ -38,8 +38,9 @@ const QUALITY_OPTIONS: { [key: string]: { label: string; sizeKB: number }[] } =
       { label: "Great Quality", sizeKB: 200 },
       { label: "Good Quality", sizeKB: 100 },
     ],
+    featured: [{ label: "Optimized Quality", sizeKB: 75 }],
     square: [
-      { label: "Great Quality", sizeKB: 75 },
+      { label: "Great Quality", sizeKB: 100 },
       { label: "Good Quality", sizeKB: 50 },
     ],
   };
@@ -95,15 +96,14 @@ export const OutputControls: React.FC<OutputControlsProps> = ({
   };
 
   const getQualityOptions = () => {
-    if (aspectRatio.name === "600x600") {
-      return QUALITY_OPTIONS.square;
-    }
-    if (
-      ["1920x1080", "1200x657", "1080x1350", "1080x1920"].includes(
-        aspectRatio.name
-      )
-    ) {
+    if (aspectRatio.name === "Banner") {
       return QUALITY_OPTIONS.large;
+    }
+    if (aspectRatio.name === "Featured Image") {
+      return QUALITY_OPTIONS.featured;
+    }
+    if (["Blog Post Big", "Blog Post Regular"].includes(aspectRatio.name)) {
+      return QUALITY_OPTIONS.square;
     }
     return null; // Fallback for 'Original' and any other aspect ratios
   };
@@ -111,7 +111,7 @@ export const OutputControls: React.FC<OutputControlsProps> = ({
   const qualityOptions = getQualityOptions();
 
   return (
-    <div className="flex flex-col h-full bg-gray-900/50 p-6 rounded-xl space-y-6 overflow-y-auto">
+    <div className="flex flex-col h-full bg-gray-900/50 p-6 rounded-lg space-y-6 overflow-y-auto">
       <div>
         <label
           htmlFor="imageTitle"
@@ -181,14 +181,6 @@ export const OutputControls: React.FC<OutputControlsProps> = ({
             disabled={isGeneratingAltText}
           >
             <option>English</option>
-            <option>Spanish</option>
-            <option>French</option>
-            <option>German</option>
-            <option>Japanese</option>
-            <option>Chinese</option>
-            <option>Italian</option>
-            <option>Portuguese</option>
-            <option>Russian</option>
             <option>Serbian</option>
           </select>
         </div>
@@ -280,7 +272,7 @@ export const OutputControls: React.FC<OutputControlsProps> = ({
               {qualityOptions ? "Output Quality" : "Max File Size"}
             </label>
             {qualityOptions ? (
-              <div className="flex justify-between gap-2">
+              <div className="flex justify-around gap-2">
                 {qualityOptions.map(({ label, sizeKB }) => (
                   <button
                     key={label}

@@ -1,4 +1,10 @@
-import type { AspectRatio, Position, Size, ImageFit, PaddingSize } from '../types';
+import type {
+  AspectRatio,
+  Position,
+  Size,
+  ImageFit,
+  PaddingSize,
+} from "../types";
 
 const PADDING_MAP: Record<PaddingSize, number> = {
   none: 0,
@@ -29,39 +35,43 @@ export async function processImage(
   paddingSize: PaddingSize,
   backgroundColor: string
 ): Promise<Blob> {
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
   if (!ctx) {
-    throw new Error('Could not get canvas context');
+    throw new Error("Could not get canvas context");
   }
 
   const naturalWidth = image.naturalWidth;
   const naturalHeight = image.naturalHeight;
   const imageRatio = naturalWidth / naturalHeight;
 
-  if (imageFit === 'contain') {
+  if (imageFit === "contain") {
     const targetWidth = aspectRatio.width ?? naturalWidth;
-    const targetHeight = aspectRatio.height ?? (aspectRatio.value ? targetWidth / aspectRatio.value : naturalHeight);
+    const targetHeight =
+      aspectRatio.height ??
+      (aspectRatio.value ? targetWidth / aspectRatio.value : naturalHeight);
 
     canvas.width = Math.round(targetWidth);
     canvas.height = Math.round(targetHeight);
-    
+
     ctx.fillStyle = backgroundColor;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
+
     const padding = PADDING_MAP[paddingSize];
     const paddingX = canvas.width * padding;
     const paddingY = canvas.height * padding;
-    
+
     const paddedWidth = canvas.width - 2 * paddingX;
     const paddedHeight = canvas.height - 2 * paddingY;
     const paddedRatio = paddedWidth / paddedHeight;
-    
+
     let destWidth, destHeight;
-    if (imageRatio > paddedRatio) { // Image is wider, fit to padded width
+    if (imageRatio > paddedRatio) {
+      // Image is wider, fit to padded width
       destWidth = paddedWidth;
       destHeight = destWidth / imageRatio;
-    } else { // Image is taller or same, fit to padded height
+    } else {
+      // Image is taller or same, fit to padded height
       destHeight = paddedHeight;
       destWidth = destHeight * imageRatio;
     }
@@ -71,15 +81,21 @@ export async function processImage(
 
     ctx.drawImage(
       image,
-      0, 0, naturalWidth, naturalHeight, // source rect is the whole image
-      Math.round(destX), Math.round(destY), Math.round(destWidth), Math.round(destHeight) // destination rect
+      0,
+      0,
+      naturalWidth,
+      naturalHeight, // source rect is the whole image
+      Math.round(destX),
+      Math.round(destY),
+      Math.round(destWidth),
+      Math.round(destHeight) // destination rect
     );
-
-  } else { // 'cover' logic
+  } else {
+    // 'cover' logic
     if (renderedSize.width === 0) {
       throw new Error("Rendered image size is not available for processing.");
     }
-    
+
     const scale = naturalWidth / renderedSize.width;
     const arValue = aspectRatio.value ?? imageRatio;
 
@@ -88,10 +104,12 @@ export async function processImage(
 
     if (imageRatio > arValue) {
       containerHeightInRenderedPixels = renderedSize.height;
-      containerWidthInRenderedPixels = containerHeightInRenderedPixels * arValue;
+      containerWidthInRenderedPixels =
+        containerHeightInRenderedPixels * arValue;
     } else {
       containerWidthInRenderedPixels = renderedSize.width;
-      containerHeightInRenderedPixels = containerWidthInRenderedPixels / arValue;
+      containerHeightInRenderedPixels =
+        containerWidthInRenderedPixels / arValue;
     }
 
     const sWidth = containerWidthInRenderedPixels * scale;
@@ -101,7 +119,7 @@ export async function processImage(
 
     canvas.width = Math.round(aspectRatio.width ?? sWidth);
     canvas.height = Math.round(aspectRatio.height ?? sHeight);
-    
+
     ctx.drawImage(
       image,
       Math.round(sx),
@@ -126,21 +144,25 @@ export async function processImage(
  * @param maxSizeKB The target maximum file size in kilobytes.
  * @returns A promise that resolves with the compressed Blob.
  */
-async function compressCanvasToBlob(canvas: HTMLCanvasElement, maxSizeKB: number): Promise<Blob> {
+async function compressCanvasToBlob(
+  canvas: HTMLCanvasElement,
+  maxSizeKB: number
+): Promise<Blob> {
   const MAX_SIZE_BYTES = maxSizeKB * 1024;
-  
+
   let quality = 0.9;
   let minQuality = 0;
   let maxQuality = 1;
   let lastValidBlob: Blob | null = null;
-  
-  for (let i = 0; i < 7; i++) { // 7 iterations for binary search is enough for good precision
+
+  for (let i = 0; i < 7; i++) {
+    // 7 iterations for binary search is enough for good precision
     const blob = await new Promise<Blob | null>((resolve) => {
-      canvas.toBlob((b) => resolve(b), 'image/webp', quality);
+      canvas.toBlob((b) => resolve(b), "image/webp", quality);
     });
 
     if (!blob) {
-      throw new Error('Failed to create blob from canvas');
+      throw new Error("Failed to create blob from canvas");
     }
 
     if (blob.size <= MAX_SIZE_BYTES) {
@@ -158,9 +180,13 @@ async function compressCanvasToBlob(canvas: HTMLCanvasElement, maxSizeKB: number
 
   // If we never found a valid blob (even at lowest quality), return the last attempt
   return new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob((blob) => {
+    canvas.toBlob(
+      (blob) => {
         if (blob) resolve(blob);
         else reject(new Error("Failed to create final blob"));
-    }, 'image/webp', 0.1);
+      },
+      "image/webp",
+      0.1
+    );
   });
 }

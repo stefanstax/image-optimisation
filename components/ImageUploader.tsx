@@ -13,12 +13,9 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files && files.length > 0) {
-      const imageFiles: File[] = [];
-      for (const file of Array.from(files as FileList)) {
-        if (file.type.startsWith("image/")) {
-          imageFiles.push(file);
-        }
-      }
+      const imageFiles = Array.from(files).filter((file) =>
+        file.type.startsWith("image/")
+      );
       if (imageFiles.length > 0) {
         onImageUpload(imageFiles);
       }
@@ -31,12 +28,9 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
       event.stopPropagation();
       const files = event.dataTransfer.files;
       if (files && files.length > 0) {
-        const imageFiles: File[] = [];
-        for (const file of Array.from(files as FileList)) {
-          if (file.type.startsWith("image/")) {
-            imageFiles.push(file);
-          }
-        }
+        const imageFiles = Array.from(files).filter((file) =>
+          file.type.startsWith("image/")
+        );
         if (imageFiles.length > 0) {
           onImageUpload(imageFiles);
         }
@@ -59,7 +53,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
       onClick={handleClick}
       onDrop={handleDrop}
       onDragOver={handleDragOver}
-      className="flex flex-col items-center justify-center w-full h-full min-h-[60vh] p-8 border-4 border-dashed border-gray-600 rounded-2xl cursor-pointer hover:border-indigo-500 hover:bg-gray-700/50 transition-all duration-300"
+      className="flex flex-col items-center justify-center w-full h-full min-h-[60vh] p-8 border-4 border-dashed border-gray-600 rounded-lg cursor-pointer hover:border-indigo-500 hover:bg-gray-700/50 transition-all duration-300"
     >
       <div className="text-center">
         <UploadIcon />
