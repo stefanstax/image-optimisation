@@ -8,7 +8,7 @@ export const ASPECT_RATIOS: { [key: string]: AspectRatio } = {
     qualityKey: "default",
   },
   fullhd: {
-    name: "Banner",
+    name: "Banner 1920x1080",
     value: 1920 / 1080,
     width: 1920,
     height: 1080,
@@ -16,45 +16,37 @@ export const ASPECT_RATIOS: { [key: string]: AspectRatio } = {
     qualityKey: "banner",
   },
   custom: {
-    name: "Featured Image",
+    name: "Featured 1200x657",
     value: 1200 / 657,
     width: 1200,
     height: 657,
     className: "",
     qualityKey: "featured",
   },
-  square: {
-    name: "Blog Post Regular",
-    value: 1,
-    width: 600,
-    height: 600,
-    className: "aspect-w-1 aspect-h-1",
-    qualityKey: "postRegular",
-  },
   squareHD: {
-    name: "Blog Post Big",
+    name: "Post 1080x1080",
     value: 1,
     width: 1080,
     height: 1080,
     className: "aspect-w-1 aspect-h-1",
     qualityKey: "postBig",
   },
-  /*
-  igPortrait: {
-    name: '1080x1350',
-    value: 1080 / 1350,
-    width: 1080,
-    height: 1350,
-    className: 'aspect-w-4 aspect-h-5'
+  square: {
+    name: "Post 600x600",
+    value: 1,
+    width: 600,
+    height: 600,
+    className: "aspect-w-1 aspect-h-1",
+    qualityKey: "postRegular",
   },
-  story: {
-    name: '1080x1920',
-    value: 1080 / 1920,
-    width: 1080,
-    height: 1920,
-    className: 'aspect-w-9 aspect-h-16'
-  }
-  */
+  squareMini: {
+    name: "Post 300x300",
+    value: 1,
+    width: 300,
+    height: 300,
+    className: " aspect-w-1 aspect-h-1",
+    qualityKey: "postMini",
+  },
 };
 
 export const MAX_IMAGE_SIZE_KB = 200;

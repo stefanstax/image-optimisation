@@ -13,9 +13,10 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files && files.length > 0) {
-      const imageFiles = Array.from(files).filter((file) =>
+      const imageFiles = Array.from(files).filter((file: File) =>
         file.type.startsWith("image/")
       );
+
       if (imageFiles.length > 0) {
         onImageUpload(imageFiles);
       }
@@ -28,9 +29,10 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
       event.stopPropagation();
       const files = event.dataTransfer.files;
       if (files && files.length > 0) {
-        const imageFiles = Array.from(files).filter((file) =>
+        const imageFiles = Array.from(files).filter((file: File) =>
           file.type.startsWith("image/")
         );
+
         if (imageFiles.length > 0) {
           onImageUpload(imageFiles);
         }

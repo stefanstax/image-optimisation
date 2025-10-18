@@ -28,9 +28,10 @@ export const ImageList: React.FC<ImageListProps> = ({
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files && files.length > 0) {
-      const imageFiles = Array.from(files).filter((file) =>
+      const imageFiles = Array.from(files).filter((file: File) =>
         file.type.startsWith("image/")
       );
+
       if (imageFiles.length > 0) {
         onAddImages(imageFiles);
       }

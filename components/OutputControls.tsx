@@ -39,13 +39,20 @@ const QUALITY_OPTIONS: { [key: string]: { label: string; sizeKB: number }[] } =
       { label: "Optimised quality", sizeKB: 100 },
     ],
     featured: [{ label: "Optimised quality", sizeKB: 75 }],
-    postRegular: [
-      { label: "Higher quality", sizeKB: 75 },
-      { label: "Optimised quality", sizeKB: 50 },
-    ],
     postBig: [
       { label: "Higher quality", sizeKB: 90 },
       { label: "Optimised quality", sizeKB: 60 },
+      { label: "Maximum compression", sizeKB: 40 },
+    ],
+    postRegular: [
+      { label: "Higher quality", sizeKB: 75 },
+      { label: "Optimised quality", sizeKB: 50 },
+      { label: "Maximum compression", sizeKB: 30 },
+    ],
+    postMini: [
+      { label: "Higher quality", sizeKB: 30 },
+      { label: "Optimised quality", sizeKB: 20 },
+      { label: "Maximum compression", sizeKB: 10 },
     ],
     default: [{ label: "Optimised quality", sizeKB: 200 }],
   };
